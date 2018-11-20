@@ -43,7 +43,6 @@ function matchUp (participants) {
 async function notifyParticipants (participants, matches) {
   const history = []
   for (let participant in matches) {
-    console.log({ participant })
     const matchInfo = participants.find(p => p.name === matches[participant])
     const participantInfo = participants.find(p => p.name === participant)
     const body = `Ho ho ho! Hello ${participantInfo.name}! Your secret santa match is ${matchInfo.name}.`

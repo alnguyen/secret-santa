@@ -40,10 +40,10 @@ function matchUp (participants) {
   return matches
 }
 
-function notifyParticipants (participants, matches) {
+async function notifyParticipants (participants, matches) {
   const history = []
-  forEach(matches, async (match, participant) => {
-    const matchInfo = participants.find(p => p.name === match)
+  for (let participant in matches) {
+    const matchInfo = participants.find(p => p.name === matches[participant])
     const participantInfo = participants.find(p => p.name === participant)
     const body = `Ho ho ho! Hello ${participantInfo.name}! Your secret santa match is ${matchInfo.name}.`
     try {
@@ -52,11 +52,11 @@ function notifyParticipants (participants, matches) {
         from: process.env.TWILIO_PHONE_NBR,
         to: participantInfo.number
       })
-      history.push({ [participant]: match })
+      history.push({ [participant]: matchInfo.name })
     } catch (e) {
-      console.error('Text message error: ', e)
+      console.error('Texting message error: ', e)
     }
-  })
+  }
   fs.writeFile('history.json', JSON.stringify(history), err => {
     if (err) throw err
     console.log('Match set recorded')
@@ -66,7 +66,7 @@ function notifyParticipants (participants, matches) {
 async function init () {
   const participants = await parseInput()
   const matches = matchUp(participants)
-  notifyParticipants(participants, matches)
+  await notifyParticipants(participants, matches)
 }
 
 init()

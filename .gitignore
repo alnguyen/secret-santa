@@ -15,4 +15,4 @@ node_modules/
 .eslintcache
 .env
 data.csv
-history.csv
+history.json

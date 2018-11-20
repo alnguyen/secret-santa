@@ -4,6 +4,7 @@ const client = require('twilio')(
   process.env.TWILIO_ACCT_SID,
   process.env.TWILIO_AUTH_TOKEN
 )
+const fs = require('fs')
 const {
   clone,
   forEach,
@@ -40,17 +41,25 @@ function matchUp (participants) {
 }
 
 function notifyParticipants (participants, matches) {
-  forEach(matches, (match, participant) => {
+  const history = []
+  forEach(matches, async (match, participant) => {
     const matchInfo = participants.find(p => p.name === match)
     const participantInfo = participants.find(p => p.name === participant)
     const body = `Ho ho ho! Hello ${participantInfo.name}! Your secret santa match is ${matchInfo.name}.`
-    client.messages.create({
-      body,
-      from: process.env.TWILIO_PHONE_NBR,
-      to: participantInfo.number
-    }).then(message => {
-      console.log(message.sid)
-    }).done()
+    try {
+      await client.messages.create({
+        body,
+        from: process.env.TWILIO_PHONE_NBR,
+        to: participantInfo.number
+      })
+      history.push({ [participant]: match })
+    } catch (e) {
+      console.error('Text message error: ', e)
+    }
+  })
+  fs.writeFile('history.json', JSON.stringify(history), err => {
+    if (err) throw err
+    console.log('Match set recorded')
   })
 }
 

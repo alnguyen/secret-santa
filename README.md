@@ -14,6 +14,8 @@ A simple script that utilizes a csv to match participants and notify them via te
 
 * Once all that is set up, we run it with `yarn start`.
 
+* Once it runs through, it keeps the last match up in `history.json`.
+
 ## Future
 
 I hope to one day stick a UI on here such that users can sign up, start private participant pools.

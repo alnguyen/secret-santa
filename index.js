@@ -34,7 +34,7 @@ function matchUp (participants) {
         return matches
       } else {
         potentialMatches.push(match)
-        matchIndex = Math.random() * (0, potentialMatches.length - 1)
+        matchIndex = getRandomIndex(potentialMatches.length)
         match = potentialMatches.splice(matchIndex, 1)[0]
       }
     }

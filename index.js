@@ -17,10 +17,14 @@ function parseInput () {
   return csvToJson().fromFile('./data.csv')
 }
 
+function getRandomIndex(max) {
+  return Math.floor(Math.random() * Math.floor(max))
+}
+
 function matchUp (participants) {
   const potentialMatches = clone(participants)
   const matches = reduce(participants, (matches, current) => {
-    let matchIndex = Math.random() * (0, potentialMatches.length - 1)
+    let matchIndex = getRandomIndex(potentialMatches.length)
     let match = potentialMatches.splice(matchIndex, 1)[0]
     while (match === current) {
       if (potentialMatches.length < 1) {

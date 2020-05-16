@@ -5,72 +5,56 @@ const client = require('twilio')(
   process.env.TWILIO_AUTH_TOKEN
 )
 const fs = require('fs')
-const {
-  clone,
-  forEach,
-  keys,
-  reduce,
-  sample
-} = require('lodash')
+const { reduce, shuffle } = require('lodash')
+const twilioNumber = process.env.TWILIO_PHONE_NBR
+const dryRun = process.env.DRY_RUN == 'true'
 
-function parseInput () {
+function parseInput() {
   return csvToJson().fromFile('./data.csv')
 }
 
-function getRandomIndex(max) {
-  return Math.floor(Math.random() * Math.floor(max))
-}
-
-function matchUp (participants) {
-  const potentialMatches = clone(participants)
-  const matches = reduce(participants, (matches, current) => {
-    let matchIndex = getRandomIndex(potentialMatches.length)
-    let match = potentialMatches.splice(matchIndex, 1)[0]
-    while (match === current) {
-      if (potentialMatches.length < 1) {
-        const swapWith = sample(keys(matches))
-        matches[current.name] = matches[swapWith]
-        matches[swapWith] = match.name
-        return matches
-      } else {
-        potentialMatches.push(match)
-        matchIndex = getRandomIndex(potentialMatches.length)
-        match = potentialMatches.splice(matchIndex, 1)[0]
-      }
-    }
-    matches[current.name] = match.name
-    return matches
-  }, {})
-  return matches
-}
-
-async function notifyParticipants (participants, matches) {
-  const history = []
-  for (let participant in matches) {
-    const matchInfo = participants.find(p => p.name === matches[participant])
-    const participantInfo = participants.find(p => p.name === participant)
-    const body = `Ho ho ho! Hello ${participantInfo.name}! Your secret santa match is ${matchInfo.name}.`
-    try {
-      await client.messages.create({
-        body,
-        from: process.env.TWILIO_PHONE_NBR,
-        to: participantInfo.number
-      })
-      history.push({ [participant]: matchInfo.name })
-    } catch (e) {
-      console.error('Texting message error: ', e)
-    }
-  }
+function writeHistory(history) {
   fs.writeFile('history.json', JSON.stringify(history), err => {
     if (err) throw err
     console.log('Match set recorded')
   })
 }
 
-async function init () {
+function matchUp(participants) {
+  const randomized = shuffle(participants)
+  return reduce(randomized, (acc, current, index) => {
+    const matchIndex = index == randomized.length - 1 ? 0 : index + 1
+    acc[current.name] = randomized[matchIndex].name
+    return acc
+  }, {})
+}
+
+async function notifyParticipants(participants, matches) {
+  for (let participant in matches) {
+    const matchInfo = participants.find(p => p.name === matches[participant])
+    const participantInfo = participants.find(p => p.name === participant)
+    await sendNotification(participantInfo, matchInfo)
+  }
+}
+
+async function sendNotification(participant, match) {
+  try {
+    const body = `Ho ho ho! Hello ${participant.name}! Your secret santa match is ${match.name}.`
+    dryRun ? console.log(`DRY :: ${body}`) : await client.messages.create({
+      body,
+      from: twilioNumber,
+      to: participant.number
+    })
+  } catch (e) {
+    console.error('Texting message error: ', e)
+  }
+}
+
+async function init() {
   const participants = await parseInput()
   const matches = matchUp(participants)
   await notifyParticipants(participants, matches)
+  writeHistory(matches)
 }
 
 init()
